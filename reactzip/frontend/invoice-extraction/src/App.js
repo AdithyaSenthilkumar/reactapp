@@ -13,6 +13,12 @@ import AdminPanel from './components/AdminPanel';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
+    React.useEffect(() => {
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+    }
+  }, [isAuthenticated]);
+
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
