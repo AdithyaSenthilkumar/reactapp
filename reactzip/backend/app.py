@@ -110,7 +110,8 @@ def login():
             access_token = create_access_token(identity=json.dumps({
     'username': username,
     'role': user[3]
-}))
+})) 
+            
             return jsonify({'token': access_token, 'role': user[3]})
        
         return jsonify({'error': 'Invalid credentials'}), 401
