@@ -352,27 +352,42 @@ def get_invoice(division, invoice_id):
 @jwt_required()
 def edit_invoice(division, invoice_id):
     try:
-         current_user = json.loads(get_jwt_identity())
-         if current_user['role'] != 'gate' and current_user['role'] != 'admin':
+        # Get the current user
+        current_user = json.loads(get_jwt_identity())
+        
+        # Check if user is authorized (role: 'gate' or 'admin')
+        if current_user['role'] not in ['gate', 'admin']:
             return jsonify({'error': 'Unauthorized'}), 403
 
+        # Get the data from the request
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        print(data)
+        # Connect to the database
+        conn = sqlite3.connect('invoices.db')
+        c = conn.cursor()
 
-         data = request.json
-         conn = sqlite3.connect('invoices.db')
-         c = conn.cursor()
-       
-         update_fields = ', '.join([f"{key} = ?" for key in data.keys() if key != 'id'])
-         values = list(data.values())
-         values.append(invoice_id)
+        # Dynamically build the SQL query
+        update_fields = ', '.join([f"{key} = ?" for key in data.keys()])
+        values = list(data.values())  # Get all the new values
+        values.append(invoice_id)    # Add `invoice_id` for the WHERE clause
 
+        # Execute the SQL query
+        c.execute(f"UPDATE {division}_invoices SET {update_fields} WHERE id = ?", values)
 
-         c.execute(f"UPDATE {division}_invoices SET {update_fields} WHERE id = ?",values)
+        # Commit and close the connection
+        conn.commit()
+        conn.close()
 
+        # Return success message
+        return jsonify({'message': 'Invoice updated successfully'}), 200
 
-         conn.commit()
-         conn.close()
-         return jsonify({'message': 'Invoice updated successfully'})
+    except sqlite3.Error as e:
+        # Log and handle database errors
+        return jsonify({'error': f"Database error: {str(e)}"}), 500
     except Exception as e:
+        # General error handling
         return jsonify({'error': str(e)}), 500
    
 @app.route('/generate_report', methods=['GET'])
