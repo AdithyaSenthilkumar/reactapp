@@ -16,7 +16,6 @@ const InvoiceView = () => {
     const { user } = useAuth();
     const [parsedData, setParsedData] = useState(null);
 
-
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setEditedInvoice(prev => ({ ...prev, [name]: value }));
@@ -114,11 +113,6 @@ const InvoiceView = () => {
                 Invoice not found
             </div>
         );
-    }
-    try {
-        parsedData = invoice.data ? JSON.parse(invoice.data) : null;
-    } catch (e) {
-        console.error("Error parsing invoice.data:", e);
     }
 
 
