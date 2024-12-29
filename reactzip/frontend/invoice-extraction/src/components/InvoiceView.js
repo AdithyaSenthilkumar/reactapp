@@ -145,10 +145,10 @@ const InvoiceView = () => {
   <div className="aspect-[3/4] bg-gray-100 rounded-lg">
     {invoice.pdf_path ? (
       <iframe
-        src={`http://localhost:5000${invoice.pdf_path}`}
-        className="w-full h-full rounded-lg"
-        title="Invoice PDF"
-      />
+      src={`http://localhost:5000/get_pdf/${division}/${id}`} // Correct path
+      className="w-full h-full rounded-lg"
+      title="Invoice PDF"
+    />
     ) : (
       <p className="text-sm text-gray-500">No PDF available</p>
     )}
