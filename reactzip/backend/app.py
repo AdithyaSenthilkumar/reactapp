@@ -285,12 +285,18 @@ def get_pdf(division, invoice_id):
         c.execute(f"SELECT s3_filepath FROM {division}_invoices WHERE id = ?", (invoice_id,))
         result = c.fetchone()
         conn.close()
-        if result:
+        
+        if result and result[0]:
             file_path = result[0]
-            return send_file(file_path)
-        else:
-            return jsonify({'error': 'File not found'}), 404
+            if os.path.exists(file_path):
+                return send_file(
+                    file_path,
+                    mimetype='application/pdf',
+                    as_attachment=False
+                )
+        return jsonify({'error': 'File not found'}), 404
     except Exception as e:
+        print(f"Error serving PDF: {str(e)}")
         return jsonify({'error': str(e)}), 500
 @app.route('/approve_invoice/<division>/<int:invoice_id>', methods=['PUT'])
 @jwt_required()
