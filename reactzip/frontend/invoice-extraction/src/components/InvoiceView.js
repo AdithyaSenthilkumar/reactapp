@@ -103,6 +103,12 @@ const InvoiceView = () => {
     );
   }
   const excludedKeys = ['status', 'id', 'data'];
+  let parsedData = null;
+  try {
+        parsedData = invoice.data ? JSON.parse(invoice.data) : null;
+    } catch (e) {
+        console.error("Error parsing invoice.data:", e);
+      }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -145,23 +151,21 @@ const InvoiceView = () => {
           ))}
         </div>
         <div className="mt-4">
-                  <h3 className="text-md font-semibold mb-2">Line Items</h3>
-                  {invoice.data && invoice.data.line_items && (
-                    Array.isArray(invoice.data.line_items) ? (
-                      invoice.data.line_items.map((item, index) => (
-                        <div key={index} className="grid grid-cols-5 gap-2 mb-2 border-b pb-2">
-                          <div className="text-sm">{item.item_description}</div>
-                          <div className="text-sm">{item.product_code}</div>
-                          <div className="text-sm">{item.quantity}</div>
-                          <div className="text-sm">{item.unit_Price}</div>
-                          <div className="text-sm">{item.line_total}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <p>No line items available</p>
-                    )
-                  )}
-              </div>
+            <h3 className="text-md font-semibold mb-2">Line Items</h3>
+              {parsedData && parsedData.line_items && Array.isArray(parsedData.line_items) ? (
+                parsedData.line_items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-5 gap-2 mb-2 border-b pb-2">
+                    <div className="text-sm">{item.item_description}</div>
+                    <div className="text-sm">{item.product_code}</div>
+                    <div className="text-sm">{item.quantity}</div>
+                    <div className="text-sm">{item.unit_Price}</div>
+                    <div className="text-sm">{item.line_total}</div>
+                  </div>
+                ))
+              ) : (
+                <p>No line items available</p>
+              )}
+          </div>
       </Card>
 
       <Card className="p-6">
