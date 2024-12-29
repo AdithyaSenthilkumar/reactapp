@@ -99,15 +99,16 @@ const InvoiceEdit = () => {
     <div className="max-w-7xl mx-auto flex space-x-6">
       {/* PDF Viewer */}
       <div className="w-1/2">
-        {invoice.pdf_path ? (
-          <iframe
-            src={`http://localhost:5000/get_pdf/${division}/${id}`}
-            className="w-full h-screen rounded-lg"
-            title="Invoice PDF"
-          />
-        ) : (
-          <p className="text-sm text-gray-500">No PDF available</p>
-        )}
+      {invoice.s3_filepath && (
+  <iframe
+    src={`http://localhost:5000/get_pdf/${division}/${id}`}
+    className="w-full h-screen rounded-lg"
+    title="Invoice PDF"
+    onError={(e) => {
+      console.error("PDF loading error:", e);
+    }}
+  />
+)}
       </div>
 
       {/* Editable Fields */}
@@ -138,27 +139,52 @@ const InvoiceEdit = () => {
             )}
 
             {/* Line Items */}
-            <div>
-              <h3 className="text-md font-semibold mb-2">Line Items</h3>
-              {editedInvoice.line_items?.map((item, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-5 gap-2 mb-2 border-b pb-2"
-                >
-                  {Object.entries(item).map(([field, value]) => (
-                    <input
-                      key={field}
-                      type="text"
-                      value={value || ""}
-                      onChange={(e) =>
-                        handleLineItemChange(index, field, e.target.value)
-                      }
-                      className="text-sm text-gray-900 border rounded p-1"
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
+            <div className="mt-4">
+  <h3 className="text-md font-semibold mb-2">Line Items</h3>
+  {editedInvoice.line_items && Array.isArray(editedInvoice.line_items) ? (
+    editedInvoice.line_items.map((item, index) => (
+      <div key={index} className="grid grid-cols-5 gap-2 mb-2 border-b pb-2">
+        <input
+          type="text"
+          value={item.item_description || ''}
+          onChange={(e) => handleLineItemChange(index, 'item_description', e.target.value)}
+          className="text-sm text-gray-900 border rounded p-1"
+          placeholder="Description"
+        />
+        <input
+          type="text"
+          value={item.product_code || ''}
+          onChange={(e) => handleLineItemChange(index, 'product_code', e.target.value)}
+          className="text-sm text-gray-900 border rounded p-1"
+          placeholder="Product Code"
+        />
+        <input
+          type="text"
+          value={item.quantity || ''}
+          onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+          className="text-sm text-gray-900 border rounded p-1"
+          placeholder="Quantity"
+        />
+        <input
+          type="text"
+          value={item.unit_Price || ''}
+          onChange={(e) => handleLineItemChange(index, 'unit_Price', e.target.value)}
+          className="text-sm text-gray-900 border rounded p-1"
+          placeholder="Unit Price"
+        />
+        <input
+          type="text"
+          value={item.line_total || ''}
+          onChange={(e) => handleLineItemChange(index, 'line_total', e.target.value)}
+          className="text-sm text-gray-900 border rounded p-1"
+          placeholder="Line Total"
+        />
+      </div>
+    ))
+  ) : (
+    <p>No line items available</p>
+  )}
+</div>
 
             <button
               onClick={handleSave}
