@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card } from "./ui/card";
-
+import PdfViewer from './PdfViewer'; // Import the PdfViewer component
 const InvoiceEdit = () => {
   const { division, id } = useParams();
   const { token } = useAuth();
@@ -98,18 +98,13 @@ const InvoiceEdit = () => {
   return (
     <div className="max-w-7xl mx-auto flex space-x-6">
       {/* PDF Viewer */}
-      <div className="w-1/2">
-      {invoice.s3_filepath && (
-  <iframe
-    src={`http://localhost:5000/get_pdf/${division}/${id}`}
-    className="w-full h-screen rounded-lg"
-    title="Invoice PDF"
-    onError={(e) => {
-      console.error("PDF loading error:", e);
-    }}
-  />
-)}
-      </div>
+          <div className="w-1/2">
+          <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
+              <div className="aspect-[3/4] bg-gray-100 rounded-lg">
+                 <PdfViewer division={division} id={id} />
+             </div>
+           </div>
+      
 
       {/* Editable Fields */}
       <div className="w-1/2 space-y-6">
