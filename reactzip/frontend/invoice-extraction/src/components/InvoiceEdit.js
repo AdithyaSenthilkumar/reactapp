@@ -146,7 +146,14 @@ const InvoiceEdit = () => {
 
             {/* Line Items */}
             <div className="mt-4">
-              <h3 className="text-md font-semibold mb-2">Line Items</h3>
+              <h3 className="text-md font-semibold mb-2">Products</h3>
+              <div className="grid grid-cols-5 gap-2 font-bold">
+            <div>Description</div>
+            <div>Code</div>
+            <div>Quantity</div>
+            <div>Price</div>
+            <div>Line Total</div>
+          </div>
               {parsedData && parsedData.line_items && Array.isArray(parsedData.line_items) ? (
                 parsedData.line_items.map((item, index) => (
                   <div key={index} className="grid grid-cols-5 gap-2 mb-2 border-b pb-2">
