@@ -11,23 +11,21 @@ const InvoiceUpload = () => {
   const [extractedData, setExtractedData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile && selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
       setError('');
-      setExtractedData(null); // Clear previous data
+      setExtractedData(null);
     } else {
       setFile(null);
       setError('Please select a valid PDF file');
-       setExtractedData(null); // Clear previous data
+      setExtractedData(null);
     }
   };
 
- const handleEdit = () => {
-     navigate(`/edit/${division}/${extractedData.id}`);
-  };
   const handleUpload = async () => {
     if (!division) {
       setError('Please select a division');
@@ -56,7 +54,8 @@ const InvoiceUpload = () => {
       
       if (response.ok) {
         setExtractedData(data.data);
-          navigate(`/edit/${division}/${data.id}`);
+        console.log("Navigating to edit page ",data);
+        navigate(`/edit/${division}/${data.id}`);
       } else {
         setError(data.error);
       }
