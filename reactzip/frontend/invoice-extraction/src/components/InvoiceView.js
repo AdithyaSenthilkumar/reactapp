@@ -141,17 +141,19 @@ const InvoiceView = () => {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
-        <div className="aspect-[3/4] bg-gray-100 rounded-lg">
-          {invoice.pdf_path && (
-            <iframe
-              src={`http://localhost:5000/get_pdf/${division}/${id}`}
-              className="w-full h-full rounded-lg"
-              title="Invoice PDF"
-            />
-          )}
-        </div>
-      </Card>
+  <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
+  <div className="aspect-[3/4] bg-gray-100 rounded-lg">
+    {invoice.pdf_path ? (
+      <iframe
+        src={`http://localhost:5000${invoice.pdf_path}`}
+        className="w-full h-full rounded-lg"
+        title="Invoice PDF"
+      />
+    ) : (
+      <p className="text-sm text-gray-500">No PDF available</p>
+    )}
+  </div>
+</Card>
     </div>
   );
 };
