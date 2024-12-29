@@ -134,7 +134,6 @@ const ApprovalQueue = () => {
           {error}
         </div>
       )}
-      {user?.role === 'store' && (
         <Card className="p-6">
            <div className="flex justify-between items-center mb-6">
               <div>
@@ -246,7 +245,6 @@ const ApprovalQueue = () => {
             </table>
           </div>
         </Card>
-      )}
     </div>
   );
 };
