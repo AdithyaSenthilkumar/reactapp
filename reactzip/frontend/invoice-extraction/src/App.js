@@ -23,22 +23,22 @@ const PrivateRoute = ({ children }) => {
 
 
 const App = () => {
+  const { isAuthenticated } = useAuth();
 
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
+        <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/" /> : <Login />
+          } />
+          <Route path="/" element={
+            <PrivateRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </PrivateRoute>
+          } />
           <Route
             path="/upload"
             element={
