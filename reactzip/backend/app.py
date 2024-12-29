@@ -226,7 +226,6 @@ def upload_invoice(division):
         c.execute('select last_insert_rowid()')
         row_id = c.fetchone()[0]
         conn.close()
-        print("hello4")
         return jsonify({
             'message': 'Invoice uploaded and processed successfully',
             'data': extracted_data,
@@ -432,8 +431,8 @@ def process_invoice(file_path):
     prompt = f"""
         Extract supplier_name, PO_number, supplier_address, supplier_GSTIN, customer_address, customer_GSTIN,
         invoice_number, invoice_date, total_amount,job_ID( like "J-number" if not present then NA), vehicle_number(if not present NA),
-        line items(item_description, product_code(HSN/SAC), quantity, unit_Price,line_total),
-        total_tax_percentage(not null give 0% instead, calculate as total tax amount/total amount before tax *100) from the OCR processed text.
+        line items(item_description, product_code(HSN/SAC), quantity(can also be present as PCS), unit_Price(can also be present as amount),line_total),
+        total_tax_percentage(not null give 0% instead) from the OCR processed text.
         No explanation, just json, no backticks and "json" string, just start with curly braces.
         Ensure the output is a valid JSON object, strictly adhering to JSON standards.
         If multiple pages are different invoices, make them different jsons
@@ -446,6 +445,7 @@ def process_invoice(file_path):
     """
    
     response = genai_model.generate_content(prompt)
+    print(response.text)
     return response.text
 
 
