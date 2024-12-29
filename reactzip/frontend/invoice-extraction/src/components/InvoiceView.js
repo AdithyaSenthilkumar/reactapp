@@ -115,13 +115,13 @@ const InvoiceView = () => {
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Invoice Details</h2>
-             {user?.role === 'gate' && (
+             {
              <button
                         onClick={handleEdit}
                         className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
                         >
                          {isEditing ? 'Save' : 'Edit'}
-                    </button>)}
+                    </button>}
         </div>
         <div className="space-y-4">
           {Object.entries(invoice).map(([key, value]) => (
