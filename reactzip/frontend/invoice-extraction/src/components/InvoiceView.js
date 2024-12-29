@@ -134,7 +134,24 @@ const InvoiceView = () => {
                                {typeof value === 'object' ? JSON.stringify(value) : value}
                             </div>
                      )}
+                     <div className="mt-4">
+  <h3 className="text-md font-semibold mb-2">Line Items</h3>
+  {invoice.line_items && Array.isArray(JSON.parse(invoice.line_items)) ? (
+    JSON.parse(invoice.line_items).map((item, index) => (
+      <div key={index} className="grid grid-cols-5 gap-2 mb-2 border-b pb-2">
+        <div className="text-sm">{item.item_description}</div>
+        <div className="text-sm">{item.product_code}</div>
+        <div className="text-sm">{item.quantity}</div>
+        <div className="text-sm">{item.unit_Price}</div>
+        <div className="text-sm">{item.line_total}</div>
+      </div>
+    ))
+  ) : (
+    <p>No line items available</p>
+  )}
+</div>
               </div>
+              
             )
           ))}
         </div>
@@ -143,15 +160,16 @@ const InvoiceView = () => {
       <Card className="p-6">
   <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
   <div className="aspect-[3/4] bg-gray-100 rounded-lg">
-    {invoice.pdf_path ? (
-      <iframe
-      src={`http://localhost:5000/get_pdf/${division}/${id}`} // Correct path
-      className="w-full h-full rounded-lg"
-      title="Invoice PDF"
-    />
-    ) : (
-      <p className="text-sm text-gray-500">No PDF available</p>
-    )}
+  {invoice.s3_filepath && (
+  <iframe
+    src={`http://localhost:5000/get_pdf/${division}/${id}`}
+    className="w-full h-screen rounded-lg"
+    title="Invoice PDF"
+    onError={(e) => {
+      console.error("PDF loading error:", e);
+    }}
+  />
+)}
   </div>
 </Card>
     </div>
