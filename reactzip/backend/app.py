@@ -276,7 +276,22 @@ def get_invoices(division):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+@app.route('/get_pdf/<division>/<int:invoice_id>', methods=['GET'])
+@jwt_required()
+def get_pdf(division, invoice_id):
+    try:
+        conn = sqlite3.connect('invoices.db')
+        c = conn.cursor()
+        c.execute(f"SELECT s3_filepath FROM {division}_invoices WHERE id = ?", (invoice_id,))
+        result = c.fetchone()
+        conn.close()
+        if result:
+            file_path = result[0]
+            return send_file(file_path)
+        else:
+            return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @app.route('/approve_invoice/<division>/<int:invoice_id>', methods=['PUT'])
 @jwt_required()
 def approve_invoice(division, invoice_id):
@@ -310,17 +325,22 @@ def get_invoice(division, invoice_id):
     try:
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
+        
+        # Fetch the invoice details by ID
         c.execute(f'SELECT * FROM {division}_invoices WHERE id = ?', (invoice_id,))
-       
-        columns = [description[0] for description in c.description]
-        invoice = [dict(zip(columns, row)) for row in c.fetchall()]
-       
+        result = c.fetchone()
         conn.close()
-        if invoice:
-            return jsonify(invoice[0])
-        return jsonify({'error': 'Invoice not found'}), 404
+
+        if result:
+            # Get column names
+            columns = [description[0] for description in c.description]
+            invoice = dict(zip(columns, result))
+            return jsonify(invoice)
+        else:
+            return jsonify({'error': 'Invoice not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
    
 @app.route('/edit_invoice/<division>/<int:invoice_id>', methods=['PUT'])
 @jwt_required()
@@ -397,22 +417,6 @@ def generate_report():
       return jsonify({'error': str(e)}), 500
 
 
-@app.route('/get_pdf/<division>/<int:invoice_id>', methods=['GET'])
-@jwt_required()
-def get_pdf(division,invoice_id):
-        try:
-            conn = sqlite3.connect('invoices.db')
-            c = conn.cursor()
-            c.execute(f'SELECT s3_filepath FROM {division}_invoices WHERE id = ?', (invoice_id,))
-            result = c.fetchone()
-            conn.close()
-            if result:
-                file_path= result[0]
-                return send_file(file_path)
-            else:
-                 return jsonify({'error': 'File not found'}), 404
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
 
 
 # Helper functions
