@@ -356,7 +356,7 @@ def edit_invoice(division, invoice_id):
         current_user = json.loads(get_jwt_identity())
         
         # Check if user is authorized (role: 'gate' or 'admin')
-        if current_user['role'] not in ['gate', 'admin']:
+        if current_user['role'] not in ['gate','store', 'admin']:
             return jsonify({'error': 'Unauthorized'}), 403
 
         # Get the data from the request
@@ -455,7 +455,7 @@ def process_invoice(file_path):
    
     prompt = f"""
         Extract supplier_name, PO_number, supplier_address, supplier_GSTIN, customer_address, customer_GSTIN,
-        invoice_number, invoice_date, total_amount,job_ID( like "J-number" if not present then NA), vehicle_number(if not present NA),
+        invoice_number, invoice_date, total_amount(remove commas in the number),job_ID( like "J-number" if not present then NA), vehicle_number(if not present NA),
         line items(item_description, product_code(HSN/SAC), quantity(can also be present as PCS), unit_Price(can also be present as amount),line_total),
         total_tax_percentage(not null give 0% instead) from the OCR processed text.
         No explanation, just json, no backticks and "json" string, just start with curly braces.
