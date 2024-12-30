@@ -84,6 +84,8 @@ const InvoiceView = () => {
                 }
             } catch (err) {
                 setError('Failed to update invoice details');
+                console.error(err);
+
             }
         } else {
             setIsEditing(true);
@@ -118,6 +120,12 @@ const InvoiceView = () => {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
+                <div className="aspect-[3/4] bg-gray-100 rounded-lg">
+                    <PdfViewer division={division} id={id} />
+                </div>
+            </Card>
             <Card className="p-6">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-semibold">Invoice Details</h2>
@@ -226,12 +234,7 @@ const InvoiceView = () => {
 
             </Card>
 
-            <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
-                <div className="aspect-[3/4] bg-gray-100 rounded-lg">
-                    <PdfViewer division={division} id={id} />
-                </div>
-            </Card>
+            
         </div>
     );
 };
