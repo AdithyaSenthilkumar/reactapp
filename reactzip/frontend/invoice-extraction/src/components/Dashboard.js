@@ -28,6 +28,7 @@ const Dashboard = () => {
     try {
       const divisions = ['engineering', 'ultra_filtration', 'water'];
       let totalStats = { submitted: 0, processed: 0, pending: 0 };
+      const uniqueInvoices = new Map();
 
       for (const division of divisions) {
         const response = await fetch(
@@ -39,42 +40,58 @@ const Dashboard = () => {
         const data = await response.json();
         
         if (response.ok) {
+          data.forEach(invoice => {
+            // Use invoice number as unique identifier
+            if (!uniqueInvoices.has(invoice.invoice_number)) {
+              uniqueInvoices.set(invoice.invoice_number, {
+                ...invoice,
+                division
+              });
+            }
+          });
+          
           totalStats.submitted += data.length;
           totalStats.processed += data.filter(i => i.status === 'approved').length;
           totalStats.pending += data.filter(i => i.status === 'pending').length;
-          setInvoices(prev => [...prev, ...data]);
         }
       }
       
       setStats(totalStats);
+      // Convert Map to Array and take only the last 5 invoices
+      setInvoices([...uniqueInvoices.values()].slice(-10));
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
   };
 
+  const handleDateRangeChange = (range) => {
+    if (range?.from && range?.to) {
+      setDateRange(range);
+    }
+  };
   useEffect(() => {
     fetchStats();
   }, [dateRange]);
 
-  const exportData = (format) => {
+  const exportData = (format_req) => {
     const data = invoices.map(invoice => ({
       division: invoice.division,
       invoice_number: invoice.invoice_number,
       supplier_name: invoice.supplier_name,
       invoice_date: invoice.invoice_date,
       total_amount: invoice.total_amount,
-      status: invoice.status,
       scanning_date: invoice.scanning_date
+
     }));
 
-    if (format === 'json') {
+    if (format_req=== 'json') {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `invoices_${format(new Date(), 'yyyy-MM-dd')}.json`;
       a.click();
-    } else if (format === 'excel') {
+    } else if (format_req === 'excel') {
       // Convert to CSV for Excel
       const headers = Object.keys(data[0]).join(',');
       const rows = data.map(obj => Object.values(obj).join(','));
@@ -116,7 +133,7 @@ const Dashboard = () => {
           </div>
         </Card>)}
 
-        {user?.role !== 'gate' &&( <Card className="p-6">
+       {user?.role !== 'gate' &&( <Card className="p-6">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-yellow-100 rounded-lg">
               <Clock className="h-6 w-6 text-yellow-600" />
@@ -124,6 +141,17 @@ const Dashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Pending Approval</p>
               <p className="text-2xl font-semibold">{stats.pending}</p>
+            </div>
+          </div>
+        </Card>)}
+        {user?.role === 'gate' && ( <Card className="p-6">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <FileText className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Submitted Files</p>
+              <p className="text-2xl font-semibold">{stats.submitted}</p>
             </div>
           </div>
         </Card>)}
@@ -159,7 +187,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {invoices.slice(0, 5).map((invoice, index) => (
+                {invoices.slice(0, 10).map((invoice, index) => (
                   <tr key={index} className="border-t">
                     <td className="py-3">{invoice.invoice_number}</td>
                     <td className="py-3">{invoice.supplier_name}</td>
@@ -196,7 +224,7 @@ const Dashboard = () => {
                 <Calendar
                       mode="range"
                       selected={dateRange}
-                      onSelect={setDateRange}
+                      onSelect={handleDateRangeChange}
                       className="rounded-md border"
                       />
             </PopoverContent>
