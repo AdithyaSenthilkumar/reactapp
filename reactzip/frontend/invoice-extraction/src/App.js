@@ -1,3 +1,4 @@
+// src/App.js
 import React from 'react';
 import './styles/globals.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -11,6 +12,7 @@ import ApprovalQueue from './components/ApprovalQueue.js';
 import InvoiceEdit from './components/InvoiceEdit.js';
 import AdminPanel from './components/AdminPanel';
 import Loading from './components/Loading';
+import InvoiceList from './components/InvoiceList';
 
 
 const PrivateRoute = ({ children }) => {
@@ -93,16 +95,26 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       />
-         <Route
-             path="/admin"
-             element={
-                 <PrivateRoute>
-                     <Layout>
-                         <AdminPanel />
-                     </Layout>
-                 </PrivateRoute>
-             }
-         />
+       <Route
+           path="/admin"
+           element={
+               <PrivateRoute>
+                   <Layout>
+                       <AdminPanel />
+                   </Layout>
+               </PrivateRoute>
+           }
+       />
+       <Route
+         path="/invoices"
+         element={
+           <PrivateRoute>
+             <Layout>
+               <InvoiceList />
+             </Layout>
+           </PrivateRoute>
+         }
+     />
     </Routes>
   );
 };
