@@ -14,29 +14,28 @@ from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
 import uuid
+from dotenv import load_dotenv
 
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change in production
+app.config['JWT_SECRET_KEY'] = 'your-secret-key' # Change in production
 jwt = JWTManager(app)
-
 
 # Initialize models and configs
 ocr_model = ocr_predictor(pretrained=True)
 genai.configure(api_key="AIzaSyBdKX9CNNCjU2cXj6V6ASZ_lhF_p5K4hyM")
 genai_model = genai.GenerativeModel("gemini-1.5-flash")
 
-
 # S3 Configuration (commented during testing)
 # s3_client = boto3.client('s3')
 # BUCKET_NAME = 'your-bucket-name'
 
-
 def init_db():
     conn = sqlite3.connect('invoices.db')
     c = conn.cursor()
-   
+    
     # Users table
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -46,7 +45,7 @@ def init_db():
             role TEXT NOT NULL
         )
     ''')
-   
+    
     # Insert default users if they don't exist
     c.execute('SELECT * FROM users WHERE username IN (?, ?, ?)', ('admin', 'user', 'store'))
     if not c.fetchall():
@@ -56,7 +55,7 @@ def init_db():
                  ('gate', generate_password_hash('gate'), 'gate'))
         c.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
                  ('store', generate_password_hash('store'), 'store'))
-   
+    
     # Create tables for each division
     divisions = ['engineering', 'ultra_filtration', 'water']
     for division in divisions:
@@ -84,7 +83,7 @@ def init_db():
                 data JSON
             )
         ''')
-   
+    
     conn.commit()
     conn.close()
 
@@ -92,20 +91,21 @@ def init_db():
 with app.app_context():
     init_db()
 
-
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        data = request.json
+        data = request.get_json()
+        if not data or not all(key in data for key in ['username', 'password']):
+            return jsonify({'error': 'Username and password are required'}), 400
         username = data.get('username')
         password = data.get('password')
-       
+        
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
         c.execute('SELECT * FROM users WHERE username = ?', (username,))
         user = c.fetchone()
         conn.close()
-       
+        
         if user and check_password_hash(user[2], password):
             access_token = create_access_token(identity=json.dumps({
     'username': username,
@@ -113,11 +113,12 @@ def login():
 })) 
             
             return jsonify({'token': access_token, 'role': user[3]})
-       
+        
         return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-   
+          app.logger.error(f"Login error: {str(e)}") # Log error
+          return jsonify({'error': 'An unexpected error occurred'}), 500
+    
 @app.route('/register', methods=['POST'])
 @jwt_required()
 def register():
@@ -125,76 +126,74 @@ def register():
         current_user = json.loads(get_jwt_identity())
         if current_user['role'] != 'admin':
             return jsonify({'error': 'Unauthorized'}), 403
-       
-        data = request.json
+        
+        data = request.get_json()
+        if not data or not all(key in data for key in ['username', 'password', 'role']):
+            return jsonify({'error': 'Username, password, and role are required'}), 400
+        
         username = data.get('username')
         password = data.get('password')
         role = data.get('role')
-       
-        if not username or not password or not role:
-            return jsonify({'error': 'Username, password, and role are required'}), 400
-       
+        
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
-       
+        
         # Check if username already exists
         c.execute('SELECT * FROM users WHERE username = ?', (username,))
         if c.fetchone():
             conn.close()
             return jsonify({'error': 'Username already exists'}), 409
-           
+            
         hashed_password = generate_password_hash(password)
         c.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
                     (username, hashed_password, role))
-       
+        
         conn.commit()
         conn.close()
         return jsonify({'message': 'User registered successfully'}), 201
-   
+    
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Registration error: {str(e)}") # Log error
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 
 @app.route('/upload_invoice/<division>', methods=['POST'])
 @jwt_required()
 def upload_invoice(division):
-
-
     try:
         current_user = json.loads(get_jwt_identity())
-        print(current_user)
-        if current_user['role'] != 'gate' and current_user['role'] != 'admin':
+        if current_user['role'] not in ['gate','admin']:
             return jsonify({'error': 'Unauthorized'}), 403
-           
+        
         if 'file' not in request.files:
             return jsonify({'error': 'No file uploaded'}), 400
-           
+        
         file = request.files['file']
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
-           
+        
         if not file.filename.endswith('.pdf'):
             return jsonify({'error': 'Only PDF files are allowed'}), 400
-       
+        
         # Local storage during testing
         temp_dir = 'temp_invoices'
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
         file_path = os.path.join(temp_dir, f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
         file.save(file_path)
+        
         # Process invoice
         result = process_invoice(file_path)
         extracted_data = json.loads(clean_response(result))
+        
         # Store in database
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
-         # Check if invoice number already exists
+        # Check if invoice number already exists
         c.execute(f'SELECT * FROM {division}_invoices WHERE invoice_number = ?', (extracted_data['invoice_number'],))
         if c.fetchone():
             conn.close()
             return jsonify({'error': 'Invoice with this number already exists'}), 409
-
-
         reference_number = str(uuid.uuid4())
         c.execute(f'''
             INSERT INTO {division}_invoices
@@ -231,11 +230,11 @@ def upload_invoice(division):
             'data': extracted_data,
             'id': row_id
         })
-       
+        
     except Exception as e:
         import traceback
-        print(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Upload error: {str(e)} \n Traceback: {traceback.format_exc()}") # Log error
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 
 # Additional routes for getting invoices, updating status, etc.
@@ -246,35 +245,36 @@ def get_invoices(division):
         status = request.args.get('status')
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-       
+        
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
-       
+        
         query = f'SELECT * FROM {division}_invoices WHERE 1=1'
         params = []
-       
+        
         if status:
             query += ' AND status = ?'
             params.append(status)
-       
+        
         if start_date:
             query += ' AND date(scanning_date) >= ?'
             params.append(start_date)
-           
+            
         if end_date:
             query += ' AND date(scanning_date) <= ?'
             params.append(end_date)
-           
+            
         c.execute(query, params)
-       
+        
         columns = [description[0] for description in c.description]
         invoices = [dict(zip(columns, row)) for row in c.fetchall()]
-       
+        
         conn.close()
         return jsonify(invoices)
-       
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Get invoices error: {str(e)}") # Log error
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 @app.route('/get_pdf/<division>/<int:invoice_id>', methods=['GET'])
 @jwt_required()
@@ -296,33 +296,34 @@ def get_pdf(division, invoice_id):
                 )
         return jsonify({'error': 'File not found'}), 404
     except Exception as e:
-        print(f"Error serving PDF: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Error serving PDF: {str(e)}") # Log error
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 @app.route('/approve_invoice/<division>/<int:invoice_id>', methods=['PUT'])
 @jwt_required()
 def approve_invoice(division, invoice_id):
     try:
         current_user = json.loads(get_jwt_identity())
-        if current_user['role'] != 'store' and current_user['role'] != 'admin':
+        if current_user['role'] not in ['store','admin']:
             return jsonify({'error': 'Unauthorized'}), 403
-           
+        
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
-       
+        
         c.execute(f'''
             UPDATE {division}_invoices
             SET status = 'approved',
                 approved_by = ?
             WHERE id = ?
         ''', (current_user['username'], invoice_id))
-       
+        
         conn.commit()
         conn.close()
-       
+        
         return jsonify({'message': 'Invoice approved successfully'})
-       
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+         app.logger.error(f"Approve invoice error: {str(e)}") # Log error
+         return jsonify({'error': 'An unexpected error occurred'}), 500
 
 
 @app.route('/get_invoice/<division>/<int:invoice_id>', methods=['GET'])
@@ -345,9 +346,9 @@ def get_invoice(division, invoice_id):
         else:
             return jsonify({'error': 'Invoice not found'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-   
+        app.logger.error(f"Get invoice error: {str(e)}")  # Log error
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+    
 @app.route('/edit_invoice/<division>/<int:invoice_id>', methods=['PUT'])
 @jwt_required()
 def edit_invoice(division, invoice_id):
@@ -360,10 +361,10 @@ def edit_invoice(division, invoice_id):
             return jsonify({'error': 'Unauthorized'}), 403
 
         # Get the data from the request
-        data = request.json
+        data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        print(data)
+        
         # Connect to the database
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
@@ -385,74 +386,67 @@ def edit_invoice(division, invoice_id):
 
     except sqlite3.Error as e:
         # Log and handle database errors
-        return jsonify({'error': f"Database error: {str(e)}"}), 500
+        app.logger.error(f"Database error during edit: {str(e)}")  # Log error
+        return jsonify({'error': 'An unexpected database error occurred'}), 500
     except Exception as e:
         # General error handling
-        return jsonify({'error': str(e)}), 500
-   
+        app.logger.error(f"General error during edit: {str(e)}") # Log error
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+    
 @app.route('/generate_report', methods=['GET'])
 @jwt_required()
 def generate_report():
     try:
         current_user = json.loads(get_jwt_identity())
-        if current_user['role'] != 'store' and current_user['role'] != 'admin':
+        if current_user['role'] not in ['store', 'admin']:
             return jsonify({'error': 'Unauthorized'}), 403
-
-
+        
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-       
+        
         conn = sqlite3.connect('invoices.db')
         c = conn.cursor()
-       
+        
         all_invoices = []
         divisions = ['engineering', 'ultra_filtration', 'water']
         for div in divisions:
             query = f'SELECT * FROM {div}_invoices WHERE 1=1'
             params = []
 
-
             if start_date:
                 query += ' AND date(scanning_date) >= ?'
                 params.append(start_date)
-           
+            
             if end_date:
                 query += ' AND date(scanning_date) <= ?'
                 params.append(end_date)
 
-
             c.execute(query, params)
-
 
             columns = [description[0] for description in c.description]
             invoices = [dict(zip(columns, row)) for row in c.fetchall()]
             all_invoices.extend(invoices)
 
-
         conn.close()
-
-
         return jsonify(all_invoices)
-   
+    
     except Exception as e:
-      return jsonify({'error': str(e)}), 500
-
-
-
+      app.logger.error(f"Report error: {str(e)}") # Log error
+      return jsonify({'error': 'An unexpected error occurred'}), 500
 
 # Helper functions
 def process_invoice(file_path):
     print("hello")
     doc = DocumentFile.from_pdf(file_path)
     results = ocr_model(doc)
-   
+    
     recognized_lines = []
     for page in results.pages:
         for block in page.blocks:
             for line in block.lines:
                 line_text = ' '.join(word.value for word in line.words)
                 recognized_lines.append(line_text)
-   
+    
     prompt = f"""
         Extract supplier_name, PO_number, supplier_address, supplier_GSTIN, customer_address, customer_GSTIN,
         invoice_number, invoice_date, total_amount(remove commas in the number),job_ID( like "J-number" if not present then NA), vehicle_number(if not present NA),
@@ -468,16 +462,14 @@ def process_invoice(file_path):
         2. For total tax amount, add up components like SGST, CGST but careful of duplicates
         The OCR processed Text: {recognized_lines}
     """
-   
+    
     response = genai_model.generate_content(prompt)
     print(response.text)
     return response.text
 
-
 def clean_response(response_text):
     cleaned_text = response_text.replace("```json", "").replace("```", "").strip()
     return cleaned_text
-
 
 if __name__ == '__main__':
     app.run(debug=True)
