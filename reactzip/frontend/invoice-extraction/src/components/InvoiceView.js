@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from './ui/card';
 import PdfViewer from './PdfViewer'; // Import the PdfViewer component
+import { useNavigate } from 'react-router-dom';
 
 const InvoiceView = () => {
     const { division, id } = useParams();
@@ -15,7 +16,8 @@ const InvoiceView = () => {
     const [editedInvoice, setEditedInvoice] = useState({});
     const { user } = useAuth();
     const [parsedData, setParsedData] = useState(null);
-
+    const navigate = useNavigate();
+    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setEditedInvoice(prev => ({ ...prev, [name]: value }));
@@ -119,7 +121,9 @@ const InvoiceView = () => {
 
 
     return (
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
             <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">Invoice PDF</h2>
                 <div className="aspect-[3/4] bg-gray-100 rounded-lg">
