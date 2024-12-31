@@ -10,9 +10,15 @@ import InvoiceView from './components/InvoiceView.js';
 import ApprovalQueue from './components/ApprovalQueue.js';
 import InvoiceEdit from './components/InvoiceEdit.js';
 import AdminPanel from './components/AdminPanel';
+import Loading from './components/Loading';
+
 
 const PrivateRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <Loading />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
@@ -22,16 +28,21 @@ const PrivateRoute = ({ children }) => {
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+    const { isAuthenticated, loading } = useAuth();
+
+    if (loading) {
+        return <Loading />; // Or a loading spinner
+    }
+
 
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? <Navigate to="/" /> : <Login />
-        }
-      />
+        <Route
+            path="/login"
+            element={
+                isAuthenticated ? <Navigate to="/" /> : <Login />
+            }
+        />
       <Route
         path="/"
         element={
@@ -52,16 +63,16 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       />
-      <Route
-        path="/edit/:division/:id"
-        element={
-          <PrivateRoute>
-            <Layout>
-              <InvoiceEdit />
-            </Layout>
-          </PrivateRoute>
-        }
-      />
+        <Route
+            path="/edit/:division/:id"
+            element={
+                <PrivateRoute>
+                    <Layout>
+                        <InvoiceEdit />
+                    </Layout>
+                </PrivateRoute>
+            }
+        />
       <Route
         path="/view/:division/:id"
         element={
@@ -82,16 +93,16 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       />
-      <Route
-        path="/admin"
-        element={
-          <PrivateRoute>
-            <Layout>
-              <AdminPanel />
-            </Layout>
-          </PrivateRoute>
-        }
-      />
+         <Route
+             path="/admin"
+             element={
+                 <PrivateRoute>
+                     <Layout>
+                         <AdminPanel />
+                     </Layout>
+                 </PrivateRoute>
+             }
+         />
     </Routes>
   );
 };
