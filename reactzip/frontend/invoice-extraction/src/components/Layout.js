@@ -1,3 +1,4 @@
+// src/components/Layout.js
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,7 +8,9 @@ import {
     CheckCircle,
     LogOut,
     Users,
-    Home
+    Home,
+    List,
+    Download
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -57,10 +60,15 @@ const Layout = ({ children }) => {
                       <CheckCircle className="h-4 w-4" />
                       <span>Approval Queue</span>
                  </Link>
+                 <Link to="/invoices" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+                   <List className="h-4 w-4" />
+                   <span>View Invoices</span>
+                 </Link>
                   <Link to="/admin" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
                       <Users className="h-4 w-4" />
                       <span>User Management</span>
                  </Link>
+                 
              </>
             )}
             {user && user.role === 'gate' && (
@@ -70,10 +78,19 @@ const Layout = ({ children }) => {
                 </Link>
             )}
             {user && user.role === 'store' && (
+             <>
+             <Link to="/invoices" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+                   <List className="h-4 w-4" />
+                   <span>View Invoices</span>
+              </Link>
                <Link to="/approval" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Approval Queue</span>
-               </Link>
+                 <CheckCircle className="h-4 w-4" />
+                 <span>Approval Queue</span>
+              </Link>
+              
+              
+             </>
+
             )}
         </nav>
         <div className="p-4 border-t border-gray-700">
