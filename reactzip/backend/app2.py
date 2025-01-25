@@ -24,7 +24,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf.csrf import CSRFProtect, generate_csrf 
 from sqlalchemy import or_
 import logging
 
@@ -44,6 +44,7 @@ app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_COOKIE_SECURE'] = False # Set to True in production (HTTPS)
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True
 app.config['JWT_CSRF_IN_COOKIES'] = True
+app.config['JWT_CSRF_CHECK_FORM'] = True
 app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true' # Enable debug mode if FLASK_DEBUG is set to true
 
 # Initialize extensions
@@ -147,6 +148,7 @@ def login():
             resp = jsonify({'login': True, 'role': user.role})
             set_access_cookies(resp, access_token)
             set_refresh_cookies(resp, refresh_token)
+            resp.set_cookie('csrf_token', generate_csrf(), httponly=True, secure=False, samesite='Lax')
             return resp, 200
 
         return jsonify({'error': 'Invalid credentials'}), 401
@@ -173,11 +175,15 @@ def logout():
     unset_jwt_cookies(resp)
     return resp, 200
 
-@app.after_request
-def handle_csrf(response):
-    """Set CSRF token cookie after each request."""
-    response.set_cookie("csrf_token", generate_csrf())
+
+@app.route('/get_csrf_token', methods=['GET'])
+def get_csrf_token():
+    """Generate and return a CSRF token."""
+    csrf_token = generate_csrf()  # Use the imported generate_csrf function
+    response = jsonify({'csrf_token': csrf_token})
+    response.set_cookie('csrf_token', csrf_token, httponly=True, secure=False, samesite='Lax')
     return response
+
 
 @app.route('/register', methods=['POST'])
 @jwt_required()
